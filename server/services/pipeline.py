@@ -25,7 +25,7 @@ import seaborn as sns
 from server.cache import job_store
 
 
-executor = ThreadPoolExecutor(max_jobs=1)
+executor = ThreadPoolExecutor(max_workers=1)
 
 
 def figure_to_base64(fig) -> str:
