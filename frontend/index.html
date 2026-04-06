@@ -734,7 +734,9 @@
     </footer>
 
     <script>
-        const API_BASE = 'http://localhost:8000';
+        const API_BASE = window.location.hostname === 'localhost' 
+            ? 'http://localhost:8000' 
+            : 'http://backend:8000';
         let currentJobId = null;
         let pollInterval = null;
         let resultData = null;
