@@ -3,8 +3,10 @@
 import uuid
 import asyncio
 import os
+import json
+from pathlib import Path
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 
 import data_loader as dl
@@ -237,3 +239,34 @@ async def telemetry_stream(websocket: WebSocket, session_id: str, driver_code: s
             await websocket.send_json({"error": str(e)})
         except Exception:
             pass
+
+
+# ── Static file serving (production) ───────────────────────
+
+
+FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+
+
+@app.get("/assets/{file_path:path}")
+async def serve_asset(file_path: str):
+    path = FRONTEND_DIST / "assets" / file_path
+    if path.is_file():
+        return FileResponse(str(path))
+    raise HTTPException(status_code=404)
+
+
+@app.get("/{full_path:path}")
+async def serve_frontend(full_path: str):
+    """Serve frontend static files with SPA fallback to index.html."""
+    if not FRONTEND_DIST.is_dir():
+        raise HTTPException(status_code=404, detail="Frontend not built")
+    if not full_path or full_path == "":
+        full_path = "index.html"
+    path = FRONTEND_DIST / full_path
+    if path.is_file():
+        return FileResponse(str(path))
+    # SPA fallback
+    index = FRONTEND_DIST / "index.html"
+    if index.is_file():
+        return FileResponse(str(index))
+    raise HTTPException(status_code=404)
