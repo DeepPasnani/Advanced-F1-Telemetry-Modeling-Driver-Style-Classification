@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getDrivers, analyzeDrivers } from '../hooks/useApi'
 
 export default function SessionDetail() {
@@ -61,6 +61,10 @@ export default function SessionDetail() {
 
       <div className="flex items-center gap-4">
         <p className="text-gray-400">{selected.length} driver(s) selected</p>
+        <Link to={`/session/${id}/live`}
+          className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded font-semibold transition">
+          Live Telemetry
+        </Link>
         <button onClick={handleAnalyze} disabled={analyzing || selected.length === 0}
           className="bg-red-600 hover:bg-red-700 disabled:bg-gray-700 disabled:cursor-not-allowed px-6 py-2 rounded font-semibold">
           {analyzing ? 'Analyzing...' : 'Run Analysis'}

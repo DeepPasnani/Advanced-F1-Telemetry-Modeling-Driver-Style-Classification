@@ -4,6 +4,7 @@ import Home from './pages/Home'
 import SessionDetail from './pages/SessionDetail'
 import AnalysisResults from './pages/AnalysisResults'
 import Report from './pages/Report'
+import LiveTelemetry from './pages/LiveTelemetry'
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
           <Route path="/session/:id" element={<SessionDetail />} />
           <Route path="/analysis/:id" element={<AnalysisResults />} />
           <Route path="/analysis/:id/report" element={<Report />} />
+          <Route path="/session/:id/live" element={<LiveTelemetry />} />
         </Routes>
       </main>
     </div>

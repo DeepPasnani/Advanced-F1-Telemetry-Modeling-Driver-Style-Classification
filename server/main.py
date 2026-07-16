@@ -1,9 +1,9 @@
 """F1 Telemetry API — FastAPI application."""
 
 import uuid
-
+import asyncio
 import os
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
@@ -191,3 +191,49 @@ def get_plot(analysis_id: str, plot_name: str):
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail=f"Plot file not found on disk")
     return FileResponse(path, media_type="image/png")
+
+
+# ── WebSocket telemetry stream ────────────────────────────
+
+
+@app.websocket("/ws/telemetry/{session_id}/{driver_code}")
+async def telemetry_stream(websocket: WebSocket, session_id: str, driver_code: str):
+    """Stream driver telemetry in real time by replaying fastest-lap data."""
+    await websocket.accept()
+    try:
+        session = _get_session(session_id)
+        telemetry = dl.get_driver_telemetry(session, driver_code.upper())
+        if telemetry.empty:
+            await websocket.send_json({"error": "No telemetry data"})
+            return
+
+        rows = telemetry.to_dict(orient="records")
+        total = len(rows)
+        prev_time = rows[0].get("SessionTime", 0) if "SessionTime" in rows[0] else 0
+
+        for i, row in enumerate(rows):
+            curr_time = row.get("SessionTime", prev_time)
+            delay = max(0, curr_time - prev_time)
+            if delay > 0:
+                await asyncio.sleep(delay)
+            prev_time = curr_time
+
+            data = {
+                "speed": row.get("Speed", 0),
+                "throttle": row.get("Throttle", 0),
+                "brake": row.get("Brake", 0),
+                "drs": row.get("DRS", 0),
+                "rpm": row.get("RPM", 0),
+                "gear": row.get("nGear", 0),
+                "lap_progress": (i + 1) / total,
+            }
+
+            await websocket.send_json(data)
+
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        try:
+            await websocket.send_json({"error": str(e)})
+        except Exception:
+            pass
