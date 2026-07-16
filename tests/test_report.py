@@ -34,3 +34,28 @@ class TestReport:
         result = generate_report(feature_df, styles, sectors)
         assert "Aggressive" in result
         assert "Smooth Cornering" in result
+
+    def test_report_weather_multilap(self):
+        df = pd.DataFrame({
+            "mean_speed_mean": [200.0],
+            "mean_speed_std": [5.0],
+            "mean_throttle_mean": [50.0],
+            "mean_throttle_std": [3.0],
+            "brake_frequency_mean": [0.3],
+            "brake_frequency_std": [0.05],
+            "aggression_index_mean": [0.1],
+            "aggression_index_std": [0.02],
+            "mean_gear_mean": [6.0],
+            "mean_gear_std": [0.5],
+            "lap_count": [57],
+            "track_temp": [32.5],
+            "air_temp": [28.3],
+            "rainfall": [0],
+        }, index=["VER"])
+        report = generate_report(df, ["Aggressive"], {"VER": (30.0, 35.0, 28.0)},
+                                 weather_dict={"track_temp": 32.5, "air_temp": 28.3, "rainfall": False})
+        assert "Track Temp" in report
+        assert "Air Temp" in report
+        assert "Rainfall" in report
+        assert "Laps Analyzed" in report
+        assert "Speed Std Dev" in report
