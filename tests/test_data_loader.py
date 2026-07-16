@@ -39,6 +39,17 @@ class TestDataLoader:
         assert isinstance(weather["air_temp"], (int, float))
         assert isinstance(weather["rainfall"], bool)
 
+    def test_get_driver_telemetry_all_laps(self):
+        session = load_session(2023, "Bahrain", "R")
+        telemetry = get_driver_telemetry(session, "VER", laps="all")
+        assert isinstance(telemetry, pd.DataFrame)
+        assert not telemetry.empty
+        assert "LapNumber" in telemetry.columns
+        assert "Speed" in telemetry.columns
+        # Should have more rows than a single fastest lap
+        fast = get_driver_telemetry(session, "VER")
+        assert len(telemetry) > len(fast)
+
     def test_get_driver_telemetry_invalid_driver(self):
         from data_loader import DriverNotFound
         session = load_session(2023, "Bahrain", "R")

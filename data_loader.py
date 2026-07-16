@@ -31,15 +31,37 @@ def get_drivers(session: Session) -> list:
     return session.results["Abbreviation"].tolist()
 
 
-def get_driver_telemetry(session: Session, driver_code: str) -> pd.DataFrame:
-    """Return telemetry DataFrame for a driver's fastest lap."""
-    laps = session.laps.pick_drivers(driver_code)
-    if laps.empty:
+def get_driver_telemetry(session: Session, driver_code: str, laps: str = "fastest") -> pd.DataFrame:
+    """Return telemetry DataFrame for a driver.
+
+    Args:
+        session: Loaded FastF1 session.
+        driver_code: Three-letter driver abbreviation.
+        laps: "fastest" (single fastest lap) or "all" (all completed laps).
+
+    Returns:
+        DataFrame with Distance, Speed, Throttle, Brake, RPM, Gear, nGear.
+        If laps="all", also includes LapNumber column.
+    """
+    laps_data = session.laps.pick_drivers(driver_code)
+    if laps_data.empty:
         raise DriverNotFound(f"Driver '{driver_code}' not found in session")
-    fastest = laps.pick_fastest()
-    telemetry = fastest.get_car_data()
+
     cols = ["Distance", "Speed", "Throttle", "Brake", "RPM", "Gear", "nGear"]
-    return telemetry[[c for c in cols if c in telemetry.columns]]
+
+    if laps == "all":
+        telemetry_list = []
+        for _, lap in laps_data.iterrows():
+            lap_telemetry = lap.get_car_data()
+            keep = [c for c in cols if c in lap_telemetry.columns]
+            lap_telemetry = lap_telemetry[keep].copy()
+            lap_telemetry["LapNumber"] = lap["LapNumber"]
+            telemetry_list.append(lap_telemetry)
+        return pd.concat(telemetry_list, ignore_index=True)
+    else:
+        fastest = laps_data.pick_fastest()
+        telemetry = fastest.get_car_data()
+        return telemetry[[c for c in cols if c in telemetry.columns]]
 
 
 def get_sector_times(session: Session, driver_code: str) -> tuple:
