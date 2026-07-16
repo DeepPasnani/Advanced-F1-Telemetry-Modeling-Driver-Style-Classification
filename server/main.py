@@ -2,7 +2,9 @@
 
 import uuid
 
+import os
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 import data_loader as dl
@@ -11,6 +13,8 @@ import clustering as cl
 import prediction as pr
 import report as rp
 import visualization as vis
+
+OUTPUT_DIR = "output"
 
 app = FastAPI(title="F1 Telemetry API", version="1.0.0")
 
@@ -143,6 +147,7 @@ def run_analysis(session_id: str, req: AnalyzeRequest):
         "report": report_text,
         "session_id": session_id,
         "driver_codes": req.driver_codes,
+        "plot_names": ["speed_trace", "throttle_brake", "sector_comparison", "radar_chart", "cluster_scatter"],
     }
 
     return {
@@ -162,3 +167,26 @@ def get_report(analysis_id: str):
     if result is None:
         raise HTTPException(status_code=404, detail=f"Analysis '{analysis_id}' not found")
     return {"status": "ok", "data": {"report": result["report"]}}
+
+
+@app.get("/analysis/{analysis_id}/plots")
+def list_plots(analysis_id: str):
+    result = analyses.get(analysis_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"Analysis '{analysis_id}' not found")
+    return {"status": "ok", "data": result["plot_names"]}
+
+
+@app.get("/analysis/{analysis_id}/plots/{plot_name}")
+def get_plot(analysis_id: str, plot_name: str):
+    result = analyses.get(analysis_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"Analysis '{analysis_id}' not found")
+    allowed = result["plot_names"]
+    if plot_name not in allowed and plot_name not in [p + ".png" for p in allowed]:
+        raise HTTPException(status_code=404, detail=f"Plot '{plot_name}' not found. Available: {allowed}")
+    name = plot_name.replace(".png", "")
+    path = os.path.join(OUTPUT_DIR, f"{name}.png")
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail=f"Plot file not found on disk")
+    return FileResponse(path, media_type="image/png")
