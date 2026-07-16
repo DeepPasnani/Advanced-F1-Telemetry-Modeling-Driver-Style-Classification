@@ -110,12 +110,13 @@ def run_analysis(session_id: str, req: AnalyzeRequest):
     for code in req.driver_codes:
         code = code.upper()
         try:
-            telemetry_dict[code] = dl.get_driver_telemetry(session, code)
+            telemetry_dict[code] = dl.get_driver_telemetry(session, code, laps="all")
             sector_dict[code] = dl.get_sector_times(session, code)
         except dl.DriverNotFound:
             raise HTTPException(status_code=404, detail=f"Driver '{code}' not found")
 
-    feature_df = fe.extract_features(telemetry_dict)
+    weather_dict = dl.get_weather(session)
+    feature_df = fe.extract_features(telemetry_dict, laps="all", weather_dict=weather_dict)
     style_labels, _ = cl.perform_clustering(feature_df, n_clusters=3)
 
     label_map = {0: "Aggressive", 1: "Smooth Cornering", 2: "Late Braker"}
@@ -138,7 +139,7 @@ def run_analysis(session_id: str, req: AnalyzeRequest):
     except Exception:
         predictions = {}
 
-    report_text = rp.generate_report(feature_df, style_names, sector_dict)
+    report_text = rp.generate_report(feature_df, style_names, sector_dict, weather_dict=weather_dict)
 
     vis.generate_all_visualizations(telemetry_dict, sector_dict, feature_df, style_names)
 
