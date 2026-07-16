@@ -14,6 +14,8 @@ All plots are saved to output/ folder as PNG files.
 import os
 import numpy as np
 import pandas as pd
+import matplotlib
+matplotlib.use("Agg")  # non-interactive backend for server use
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.patches import Polygon
@@ -284,12 +286,12 @@ def plot_cluster_scatter(feature_df: pd.DataFrame, style_labels: list) -> None:
     
     fig, ax = plt.subplots(figsize=(12, 8))
     
-    for i, (idx, driver) in enumerate(feature_df.index):
+    for i, driver in enumerate(feature_df.index):
         color = style_colors.get(style_labels[i], "#888888")
         ax.scatter(X_pca[i, 0], X_pca[i, 1], 
                    c=color, s=200, alpha=0.8, edgecolors="black", linewidth=1)
         
-        ax.annotate(driver, (X_pca[i, 0], X_pca[i, 1]),
+        ax.annotate(str(driver), (X_pca[i, 0], X_pca[i, 1]),
                    xytext=(5, 5), textcoords="offset points",
                    fontsize=12, fontweight="bold")
     
