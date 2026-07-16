@@ -1,6 +1,6 @@
 import pytest
 import pandas as pd
-from data_loader import load_session, get_drivers, get_driver_telemetry, get_sector_times
+from data_loader import load_session, get_drivers, get_driver_telemetry, get_sector_times, get_weather
 
 
 class TestDataLoader:
@@ -27,6 +27,17 @@ class TestDataLoader:
         session = load_session(2023, "Bahrain", "R")
         s1, s2, s3 = get_sector_times(session, "VER")
         assert s1 > 0 and s2 > 0 and s3 > 0
+
+    def test_get_weather(self):
+        session = load_session(2023, "Bahrain", "R")
+        weather = get_weather(session)
+        assert isinstance(weather, dict)
+        assert "track_temp" in weather
+        assert "air_temp" in weather
+        assert "rainfall" in weather
+        assert isinstance(weather["track_temp"], (int, float))
+        assert isinstance(weather["air_temp"], (int, float))
+        assert isinstance(weather["rainfall"], bool)
 
     def test_get_driver_telemetry_invalid_driver(self):
         from data_loader import DriverNotFound

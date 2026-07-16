@@ -55,6 +55,21 @@ def get_sector_times(session: Session, driver_code: str) -> tuple:
     )
 
 
+def get_weather(session: Session) -> dict:
+    """Return average weather conditions for a session.
+
+    Returns dict with track_temp, air_temp (float °C) and rainfall (bool).
+    """
+    weather = session.weather_data
+    if weather is None or weather.empty:
+        return {"track_temp": 0.0, "air_temp": 0.0, "rainfall": False}
+    return {
+        "track_temp": float(weather["TrackTemp"].mean()),
+        "air_temp": float(weather["AirTemp"].mean()),
+        "rainfall": bool(weather["Rainfall"].any()),
+    }
+
+
 def get_result(session: Session, driver_code: str) -> dict:
     """Return result dict (position, status) for a driver."""
     row = session.results[session.results["Abbreviation"] == driver_code]
