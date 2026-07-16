@@ -40,14 +40,14 @@ def get_driver_telemetry(session: Session, driver_code: str, laps: str = "fastes
         laps: "fastest" (single fastest lap) or "all" (all completed laps).
 
     Returns:
-        DataFrame with Distance, Speed, Throttle, Brake, RPM, Gear, nGear.
+        DataFrame with Distance, Speed, Throttle, Brake, DRS, RPM, Gear, nGear.
         If laps="all", also includes LapNumber column.
     """
     laps_data = session.laps.pick_drivers(driver_code)
     if laps_data.empty:
         raise DriverNotFound(f"Driver '{driver_code}' not found in session")
 
-    cols = ["Distance", "Speed", "Throttle", "Brake", "RPM", "Gear", "nGear"]
+    cols = ["Distance", "Speed", "Throttle", "Brake", "DRS", "RPM", "Gear", "nGear"]
 
     if laps == "all":
         telemetry_list = []

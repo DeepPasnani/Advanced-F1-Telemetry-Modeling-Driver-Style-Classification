@@ -47,6 +47,8 @@ class TestReport:
             "aggression_index_std": [0.02],
             "mean_gear_mean": [6.0],
             "mean_gear_std": [0.5],
+            "drs_usage_mean": [0.3],
+            "drs_usage_std": [0.1],
             "lap_count": [57],
             "track_temp": [32.5],
             "air_temp": [28.3],

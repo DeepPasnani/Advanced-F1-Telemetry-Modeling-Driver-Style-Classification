@@ -33,12 +33,14 @@ def extract_features(
                 ms = lap_data["Speed"].mean()
                 mt = lap_data["Throttle"].mean()
                 bf = lap_data["Brake"].mean()
+                drs = lap_data["DRS"].mean() if "DRS" in lap_data.columns else 0.0
                 per_lap.append({
                     "mean_speed": ms,
                     "mean_throttle": mt,
                     "brake_frequency": bf,
                     "aggression_index": (mt * bf) / max(ms, 1),
                     "mean_gear": lap_data[gear_col].mean(),
+                    "drs_usage": drs,
                 })
             lap_df = pd.DataFrame(per_lap)
             row = {
@@ -52,6 +54,8 @@ def extract_features(
                 "aggression_index_std": lap_df["aggression_index"].std(ddof=0),
                 "mean_gear_mean": lap_df["mean_gear"].mean(),
                 "mean_gear_std": lap_df["mean_gear"].std(ddof=0),
+                "drs_usage_mean": lap_df["drs_usage"].mean(),
+                "drs_usage_std": lap_df["drs_usage"].std(ddof=0),
                 "lap_count": len(lap_df),
             }
         else:
@@ -64,6 +68,7 @@ def extract_features(
                 "brake_frequency": brake_freq,
                 "aggression_index": (mean_throttle * brake_freq) / max(mean_speed, 1),
                 "mean_gear": telemetry[gear_col].mean(),
+                "drs_usage": telemetry["DRS"].mean() if "DRS" in telemetry.columns else 0.0,
             }
 
         if weather_dict:

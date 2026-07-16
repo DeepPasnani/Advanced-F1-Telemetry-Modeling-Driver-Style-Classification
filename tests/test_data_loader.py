@@ -21,6 +21,7 @@ class TestDataLoader:
         assert isinstance(telemetry, pd.DataFrame)
         assert "Speed" in telemetry.columns
         assert "Throttle" in telemetry.columns
+        assert "DRS" in telemetry.columns
         assert len(telemetry) > 0
 
     def test_get_sector_times(self):
@@ -46,6 +47,7 @@ class TestDataLoader:
         assert not telemetry.empty
         assert "LapNumber" in telemetry.columns
         assert "Speed" in telemetry.columns
+        assert "DRS" in telemetry.columns
         # Should have more rows than a single fastest lap
         fast = get_driver_telemetry(session, "VER")
         assert len(telemetry) > len(fast)

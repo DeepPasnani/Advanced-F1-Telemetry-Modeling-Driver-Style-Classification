@@ -4,12 +4,13 @@ import numpy as np
 from feature_engineering import extract_features
 
 
-def make_dummy_telemetry(speed=200, throttle=50, brake=0.1, gear=6):
+def make_dummy_telemetry(speed=200, throttle=50, brake=0.1, gear=6, drs=0.0):
     return pd.DataFrame({
         "Distance": np.linspace(0, 5000, 100),
         "Speed": np.full(100, speed),
         "Throttle": np.full(100, throttle),
         "Brake": np.full(100, brake),
+        "DRS": np.full(100, drs),
         "RPM": np.full(100, 8000),
         "Gear": np.full(100, gear),
         "nGear": np.full(100, gear),
@@ -26,7 +27,7 @@ class TestFeatureEngineering:
     def test_extract_features_has_correct_columns(self):
         tele_dict = {"VER": make_dummy_telemetry()}
         result = extract_features(tele_dict)
-        expected = {"mean_speed", "mean_throttle", "brake_frequency", "aggression_index", "mean_gear"}
+        expected = {"mean_speed", "mean_throttle", "brake_frequency", "aggression_index", "mean_gear", "drs_usage"}
         assert expected.issubset(result.columns)
 
     def test_aggression_index_value(self):

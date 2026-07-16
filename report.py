@@ -24,10 +24,14 @@ def generate_report(
             lines.append(f"  Speed Std Dev: {feature_df.loc[driver, 'mean_speed_std']:.1f} km/h")
             lines.append(f"  Brake Frequency: {feature_df.loc[driver, 'brake_frequency_mean']:.3f}")
             lines.append(f"  Aggression Index: {feature_df.loc[driver, 'aggression_index_mean']:.3f}")
+            if "drs_usage_mean" in feature_df.columns:
+                lines.append(f"  DRS Usage: {feature_df.loc[driver, 'drs_usage_mean']:.2%}")
         else:
             lines.append(f"  Mean Speed: {feature_df.loc[driver, 'mean_speed']:.1f} km/h")
             lines.append(f"  Brake Frequency: {feature_df.loc[driver, 'brake_frequency']:.3f}")
             lines.append(f"  Aggression Index: {feature_df.loc[driver, 'aggression_index']:.3f}")
+            if "drs_usage" in feature_df.columns:
+                lines.append(f"  DRS Usage: {feature_df.loc[driver, 'drs_usage']:.2%}")
 
         if driver in sector_times_dict:
             s1, s2, s3 = sector_times_dict[driver]
