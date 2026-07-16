@@ -1,0 +1,10 @@
+services:
+  f1-api:
+    build: .
+    ports:
+      - "8080:8000"
+    volumes:
+      - ./cache:/app/cache
+      - ./output:/app/output
+    environment:
+      - FASTF1_CACHE_DIR=/app/cache

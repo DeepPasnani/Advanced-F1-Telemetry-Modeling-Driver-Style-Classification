@@ -1,60 +1,77 @@
-# Advanced-F1-Telemetry-Modeling-Driver-Style-Classification
+# F1 Telemetry — Driver Style Classification
 
+Analyze F1 driver behavior using telemetry data. Classifies driving styles (Aggressive, Smooth Cornering, Late Braker), predicts lap times, and generates visual reports — all through a FastAPI backend + React dashboard.
 
-📌 Descrition :- 
+## Quick Start
 
-This project uses F1 telemetry data to model race performance and classify driver behavior with machine learning. By analyzing speed, throttle, braking, and gear data, we uncover unique driving styles and predict lap times. The system provides insights into sector performance, tire wear, and strategy optimization.
+### Development (hot-reload, two terminals)
 
+```bash
+# Terminal 1 — backend
+uvicorn server.main:app --host 0.0.0.0 --port 8080 --reload
 
+# Terminal 2 — frontend
+cd frontend && npm install && npx vite --host 0.0.0.0
 
+# Open http://localhost:5173
+```
 
-🚀 Features :-
+### Production (Docker, single command)
 
-1. Compare multiple drivers using telemetry metrics
-2. Segment laps into sectors for detailed analysis
-3. Cluster driving styles (Late Brakers, Smooth Cornering, Aggressive)
-4. Predict lap times using regression models
-5. Visualize speed, throttle, brake zones, and driver profiles
-6. Generate reports linking style to car setup and tire usage
+```bash
+docker compose up --build
+# Open http://localhost:8080
+```
 
+### Tests
 
+```bash
+python -m pytest tests/ -v
+# 24 tests, all passing
+```
 
-⚙️ Tech Stack :-
+## Architecture
 
-1. Python
-2. FastF1 – telemetry data API
-3. Scikit-learn – clustering & regression
-4. Matplotlib / Seaborn – visualization
-5. NumPy & Pandas – data handling
+```
+├── server/main.py          FastAPI app (REST + WebSocket)
+├── data_loader.py          FastF1 session loading & telemetry
+├── feature_engineering.py  Feature extraction from telemetry
+├── clustering.py           KMeans style classification + PCA
+├── prediction.py           MLPRegressor lap time prediction
+├── report.py               Text report generation
+├── visualization.py        Plot generation (matplotlib + seaborn)
+├── frontend/               React + Vite + Tailwind dashboard
+│   ├── src/pages/          Home → SessionDetail → AnalysisResults → Report → LiveTelemetry
+│   └── src/hooks/          useApi.js + useWebSocket.js
+├── Dockerfile              Multi-stage: Node build → Python serve
+├── docker-compose.yml      One-command production startup
+└── tests/                  24 pytest tests
+```
 
+## API Endpoints
 
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/sessions` | List loaded sessions |
+| `POST` | `/sessions/load` | Load a session (year, grand_prix, session_type) |
+| `GET` | `/sessions/{id}/drivers` | List drivers in a session |
+| `GET` | `/sessions/{id}/drivers/{code}/telemetry` | Fastest-lap telemetry |
+| `GET` | `/sessions/{id}/drivers/{code}/sectors` | Sector times |
+| `POST` | `/sessions/{id}/analyze` | Run full analysis pipeline |
+| `GET` | `/analysis/{id}/report` | Analysis text report |
+| `GET` | `/analysis/{id}/plots` | List generated plots |
+| `GET` | `/analysis/{id}/plots/{name}.png` | Get a plot image |
+| `WS` | `/ws/telemetry/{session_id}/{driver_code}` | Real-time telemetry stream |
 
+## Features
 
-📊 Applications :-
+- **Weather-aware** — track/air temperature and rainfall in feature set
+- **Multi-lap aggregation** — features computed across all 57 race laps (mean + std)
+- **DRS analysis** — DRS usage rate as a driving style feature
+- **Neural network prediction** — MLPRegressor for lap time estimation
+- **Real-time streaming** — WebSocket replay of fastest-lap telemetry
+- **UI dashboard** — dark-themed React app with driver cards, plots, and live view
 
-1. Identifying braking and cornering patterns across drivers
-2. Measuring lap time gains and losses by driving strategy
-3. Predicting tire wear impact from driver style
-4. Supporting engineers in race strategy decisions
+## Data Source
 
-
-
-
-✅ Future Work
-
-1. Real-time telemetry streaming integration
-2. Deep learning-based lap time prediction
-3. Incorporation of track and weather conditions
-
-
-
-
-📂 Workflow
-
-1. Setup – Install required libraries and enable FastF1 cache.
-2. Data Collection – Load race sessions, select drivers, and fastest laps.
-3. Feature Engineering – Extract telemetry (speed, throttle, brake, rpm, gear) and compute derived metrics like acceleration and aggression index.
-4. Clustering – Normalize features and classify driver behavior using KMeans/Hierarchical methods.
-5. Lap Time Prediction – Train a RandomForestRegressor to estimate lap times from telemetry-derived features.
-6. Visualization – Sector-wise comparisons and radar charts for driver profiles.
-7. Reporting – Summarize sector gains/losses and connect driving styles with car performance.
+Uses [FastF1](https://github.com/theOehrly/FastF1) (v3.8.3) to load Formula 1 session data. Cache is stored in `cache/`. Tested with 2023 Bahrain Grand Prix.
