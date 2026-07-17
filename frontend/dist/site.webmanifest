@@ -1,0 +1,13 @@
+{
+  "name": "F1 Telemetry Dashboard",
+  "short_name": "F1 Telemetry",
+  "description": "Real-time F1 telemetry analysis, driver style classification, and live data streaming",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#e8002d",
+  "icons": [
+    { "src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
