@@ -1,18 +1,44 @@
 const BASE = '/api'
 
-export async function fetchApi(path, options = {}) {
+/* Track all active abort controllers so we can cancel on unmount */
+const activeControllers = new Map()
+let ctrlId = 0
+
+export function fetchApi(path, options = {}, signal) {
   const url = `${BASE}${path}`
-  const res = await fetch(url, {
+  return fetch(url, {
     headers: { 'Content-Type': 'application/json', ...options.headers },
+    signal,
     ...options,
+  }).then(async (res) => {
+    const data = await res.json()
+    if (!res.ok) {
+      const msg = data.detail || data.message || `Request failed (${res.status})`
+      throw new Error(msg)
+    }
+    return data
   })
-  const data = await res.json()
-  if (!res.ok) {
-    throw new Error(data.detail || `Request failed (${res.status})`)
-  }
-  return data
 }
 
+/* Hook-safe wrapper: tracks the controller for cleanup */
+export function useFetch() {
+  const controller = new AbortController()
+  const id = ++ctrlId
+  activeControllers.set(id, controller)
+
+  const cancel = () => {
+    controller.abort()
+    activeControllers.delete(id)
+  }
+
+  const run = (path, options = {}) => {
+    return fetchApi(path, options, controller.signal)
+  }
+
+  return { run, cancel, signal: controller.signal }
+}
+
+/* Named API methods (for simple one-off calls without lifecycle tracking) */
 export async function getSessions() {
   return fetchApi('/sessions')
 }

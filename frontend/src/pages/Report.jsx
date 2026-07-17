@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getReport } from '../hooks/useApi'
+import Breadcrumbs from '../components/Breadcrumbs'
+import LoadingSpinner from '../components/LoadingSpinner'
+import ErrorMessage from '../components/ErrorMessage'
+import PlotCard from '../components/PlotCard'
 
 const PLOTS = ['cluster_scatter', 'radar_chart', 'speed_trace', 'throttle_brake', 'sector_comparison']
 
@@ -9,43 +13,39 @@ export default function Report() {
   const [report, setReport] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [retryCount, setRetryCount] = useState(0)
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true)
+    setError('')
     getReport(id)
       .then((res) => setReport(res.data.report))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
-  }, [id])
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-32">
-        <div className="h-8 w-8 animate-pulse-slow rounded-full border-2 border-accent border-t-transparent" />
-      </div>
-    )
   }
 
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 text-center">
-        <p className="text-red-400">{error}</p>
-        <Link to="/" className="f1-btn-secondary mt-4">← Back</Link>
-      </div>
-    )
-  }
+  useEffect(() => { load() }, [id, retryCount])
+
+  if (loading) return <div className="py-32"><LoadingSpinner label="Loading report..." /></div>
+
+  if (error) return <ErrorMessage message={error} onRetry={() => setRetryCount(c => c + 1)} backTo={`/analysis/${id}`} />
 
   return (
     <div className="animate-fade-in">
-      <div className="mb-8">
-        <div className="flex items-center gap-2 text-sm text-ink-muted mb-2">
-          <Link to={`/analysis/${id}`} className="hover:text-ink-secondary transition-colors">Analysis</Link>
-          <span>/</span>
-          <span className="text-ink-secondary">Report</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-ink">Driver Analysis Report</h1>
-          <Link to={`/analysis/${id}`} className="f1-btn-secondary">← Back to Analysis</Link>
-        </div>
+      <Breadcrumbs items={[
+        { label: 'Sessions', to: '/' },
+        { label: 'Analysis', to: `/analysis/${id}` },
+        { label: 'Report' },
+      ]} />
+
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <h1 className="text-2xl font-bold text-ink">Driver Analysis Report</h1>
+        <Link to={`/analysis/${id}`} className="f1-btn-secondary">
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to Analysis
+        </Link>
       </div>
 
       <div className="f1-card p-6 mb-10">
@@ -55,14 +55,7 @@ export default function Report() {
       <h2 className="text-xl font-bold text-ink mb-4">Visualizations</h2>
       <div className="grid gap-4 md:grid-cols-2">
         {PLOTS.map((name) => (
-          <div key={name} className="f1-card overflow-hidden p-2">
-            <img
-              src={`/api/analysis/${id}/plots/${name}.png`}
-              alt={name}
-              className="w-full rounded-lg"
-              loading="lazy"
-            />
-          </div>
+          <PlotCard key={name} src={`/api/analysis/${id}/plots/${name}.png`} alt={`${name.replace(/_/g, ' ')} plot`} />
         ))}
       </div>
     </div>
