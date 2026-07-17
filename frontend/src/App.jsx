@@ -8,9 +8,9 @@ import LiveTelemetry from './pages/LiveTelemetry'
 
 export default function App() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen bg-bg text-ink">
       <Header />
-      <main className="flex-1 container mx-auto px-4 py-6">
+      <main className="mx-auto max-w-7xl px-6 py-8">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/session/:id" element={<SessionDetail />} />

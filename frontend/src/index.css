@@ -1,3 +1,83 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* F1-style scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: hsl(0 0% 6%); }
+  ::-webkit-scrollbar-thumb { background: hsl(0 0% 20%); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(0 0% 30%); }
+}
+
+@layer components {
+  .f1-card {
+    @apply rounded-xl border border-border bg-surface shadow-lg;
+  }
+
+  .f1-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .f1-btn-primary {
+    @apply f1-btn bg-accent text-white hover:bg-accent-hover active:bg-accent-hover;
+  }
+
+  .f1-btn-secondary {
+    @apply f1-btn bg-surface-raised text-ink-secondary hover:bg-border hover:text-ink border border-border;
+  }
+
+  .f1-input {
+    @apply w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-sm text-ink placeholder:text-ink-muted transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent;
+  }
+
+  .f1-label {
+    @apply block text-xs font-semibold tracking-wide text-ink-secondary mb-1.5 uppercase;
+  }
+
+  .f1-select {
+    @apply f1-input appearance-none cursor-pointer;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+  }
+
+  .f1-badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+
+  .f1-stat {
+    @apply flex flex-col gap-0.5;
+  }
+
+  .f1-stat-value {
+    @apply text-2xl font-bold font-mono text-ink;
+  }
+
+  .f1-stat-label {
+    @apply text-xs font-medium text-ink-secondary tracking-wide uppercase;
+  }
+
+  .f1-progress {
+    @apply h-1.5 rounded-full bg-surface-raised overflow-hidden;
+  }
+
+  .f1-progress-bar {
+    @apply h-full rounded-full transition-all duration-300;
+  }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+  .text-pretty { text-wrap: pretty; }
+}

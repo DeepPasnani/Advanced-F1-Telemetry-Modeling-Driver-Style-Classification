@@ -17,29 +17,51 @@ export default function Report() {
       .finally(() => setLoading(false))
   }, [id])
 
-  if (loading) return <p className="text-center mt-20 text-gray-400">Loading report...</p>
-  if (error) return <p className="text-center mt-20 text-red-400">{error}</p>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-32">
+        <div className="h-8 w-8 animate-pulse-slow rounded-full border-2 border-accent border-t-transparent" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <p className="text-red-400">{error}</p>
+        <Link to="/" className="f1-btn-secondary mt-4">← Back</Link>
+      </div>
+    )
+  }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Driver Analysis Report</h1>
-        <Link to={`/analysis/${id}`}
-          className="text-red-400 hover:text-red-300 font-semibold">
-          ← Back to Analysis
-        </Link>
+    <div className="animate-fade-in">
+      <div className="mb-8">
+        <div className="flex items-center gap-2 text-sm text-ink-muted mb-2">
+          <Link to={`/analysis/${id}`} className="hover:text-ink-secondary transition-colors">Analysis</Link>
+          <span>/</span>
+          <span className="text-ink-secondary">Report</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-ink">Driver Analysis Report</h1>
+          <Link to={`/analysis/${id}`} className="f1-btn-secondary">← Back to Analysis</Link>
+        </div>
       </div>
 
-      <div className="bg-gray-900 rounded-lg p-6 border border-gray-800 mb-8">
-        <pre className="text-gray-200 font-mono text-sm whitespace-pre-wrap">{report}</pre>
+      <div className="f1-card p-6 mb-10">
+        <pre className="font-mono text-sm text-ink-secondary leading-relaxed whitespace-pre-wrap">{report}</pre>
       </div>
 
-      <h2 className="text-2xl font-bold mb-4">Visualizations</h2>
-      <div className="grid md:grid-cols-2 gap-4">
+      <h2 className="text-xl font-bold text-ink mb-4">Visualizations</h2>
+      <div className="grid gap-4 md:grid-cols-2">
         {PLOTS.map((name) => (
-          <div key={name} className="bg-gray-900 rounded-lg p-2 border border-gray-800">
-            <img src={`/api/analysis/${id}/plots/${name}.png`} alt={name}
-              className="w-full rounded" />
+          <div key={name} className="f1-card overflow-hidden p-2">
+            <img
+              src={`/api/analysis/${id}/plots/${name}.png`}
+              alt={name}
+              className="w-full rounded-lg"
+              loading="lazy"
+            />
           </div>
         ))}
       </div>
