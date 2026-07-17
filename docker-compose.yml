@@ -2,7 +2,7 @@ services:
   f1-api:
     build: .
     ports:
-      - "1020:8000"
+      - "3000:8000"
     volumes:
       - ./cache:/app/cache
       - ./output:/app/output

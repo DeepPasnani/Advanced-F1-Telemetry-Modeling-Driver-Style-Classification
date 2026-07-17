@@ -49,12 +49,12 @@ def _get_session(session_id: str):
 
 # ── Session endpoints ───────────────────────────────────────
 
-@app.get("/sessions")
+@app.get("/api/sessions")
 def list_sessions():
     return {"status": "ok", "data": list(sessions.keys())}
 
 
-@app.post("/sessions/load")
+@app.post("/api/sessions/load")
 def load_session(req: LoadSessionRequest):
     try:
         session = dl.load_session(req.year, req.grand_prix, req.session_type)
@@ -68,20 +68,20 @@ def load_session(req: LoadSessionRequest):
     }
 
 
-@app.get("/sessions/{session_id}")
+@app.get("/api/sessions/{session_id}")
 def get_session_info(session_id: str):
     session = _get_session(session_id)
     return {"status": "ok", "data": {"session_id": session_id}}
 
 
-@app.get("/sessions/{session_id}/drivers")
+@app.get("/api/sessions/{session_id}/drivers")
 def get_drivers(session_id: str):
     session = _get_session(session_id)
     drivers = dl.get_drivers(session)
     return {"status": "ok", "data": drivers}
 
 
-@app.get("/sessions/{session_id}/drivers/{driver_code}/telemetry")
+@app.get("/api/sessions/{session_id}/drivers/{driver_code}/telemetry")
 def get_driver_telemetry(session_id: str, driver_code: str):
     session = _get_session(session_id)
     try:
@@ -91,7 +91,7 @@ def get_driver_telemetry(session_id: str, driver_code: str):
     return {"status": "ok", "data": telemetry.to_dict(orient="records")}
 
 
-@app.get("/sessions/{session_id}/drivers/{driver_code}/sectors")
+@app.get("/api/sessions/{session_id}/drivers/{driver_code}/sectors")
 def get_driver_sectors(session_id: str, driver_code: str):
     session = _get_session(session_id)
     try:
@@ -103,7 +103,7 @@ def get_driver_sectors(session_id: str, driver_code: str):
 
 # ── Analysis endpoints ──────────────────────────────────────
 
-@app.post("/sessions/{session_id}/analyze")
+@app.post("/api/sessions/{session_id}/analyze")
 def run_analysis(session_id: str, req: AnalyzeRequest):
     session = _get_session(session_id)
 
@@ -164,7 +164,7 @@ def run_analysis(session_id: str, req: AnalyzeRequest):
     }
 
 
-@app.get("/analysis/{analysis_id}/report")
+@app.get("/api/analysis/{analysis_id}/report")
 def get_report(analysis_id: str):
     result = analyses.get(analysis_id)
     if result is None:
@@ -172,7 +172,7 @@ def get_report(analysis_id: str):
     return {"status": "ok", "data": {"report": result["report"]}}
 
 
-@app.get("/analysis/{analysis_id}/plots")
+@app.get("/api/analysis/{analysis_id}/plots")
 def list_plots(analysis_id: str):
     result = analyses.get(analysis_id)
     if result is None:
@@ -180,7 +180,7 @@ def list_plots(analysis_id: str):
     return {"status": "ok", "data": result["plot_names"]}
 
 
-@app.get("/analysis/{analysis_id}/plots/{plot_name}")
+@app.get("/api/analysis/{analysis_id}/plots/{plot_name}")
 def get_plot(analysis_id: str, plot_name: str):
     result = analyses.get(analysis_id)
     if result is None:
