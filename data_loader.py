@@ -1,126 +1,101 @@
 """
-Data loading module using FastF1 for F1 telemetry data.
-
-This module provides functions to:
-- Enable FastF1 cache
-- Load race sessions
-- Get driver fastest laps
-- Retrieve telemetry data
-
-TODO: Real-time telemetry streaming via WebSocket (Future Work)
+Data loader module for F1 telemetry data using FastF1.
 """
 
 import fastf1
-import fastf1.plotting
 import pandas as pd
-from typing import Optional, Dict, Any
+from fastf1.core import Session
 
 
-def enable_cache(cache_dir: str = "./cache") -> None:
-    """
-    Enable FastF1 cache for storing downloaded data.
-
-    Args:
-        cache_dir: Directory path for cache storage
-    """
-    fastf1.Cache.enable_cache(cache_dir)
+CACHE_DIR = "cache"
 
 
-def load_session(year: int, gp: str, session_type: str) -> fastf1.core.Session:
-    """
-    Load a FastF1 session for the specified year, grand prix, and session type.
+class SessionNotFound(Exception):
+    pass
 
-    Args:
-        year: Year of the session (e.g., 2023)
-        gp: Grand Prix name (e.g., 'Monza')
-        session_type: Session type - 'FP1', 'FP2', 'FP3', 'Q', 'R', 'SQ', 'Sprint'
 
-    Returns:
-        FastF1 Session object
-    """
-    session = fastf1.get_session(year, gp, session_type)
+class DriverNotFound(Exception):
+    pass
+
+
+def load_session(year: int, grand_prix: str, session_type: str = "R") -> Session:
+    """Load an F1 session, returns a loaded Session object."""
+    fastf1.Cache.enable_cache(CACHE_DIR)
+    session = fastf1.get_session(year, grand_prix, session_type)
     session.load()
     return session
 
 
-def get_driver_fastest_lap(session: fastf1.core.Session, driver_code: str) -> Optional[fastf1.core.Lap]:
-    """
-    Get the fastest lap for a specific driver in the session.
+def get_drivers(session: Session) -> list:
+    """Return list of driver abbreviations for a session."""
+    return session.results["Abbreviation"].tolist()
+
+
+def get_driver_telemetry(session: Session, driver_code: str, laps: str = "fastest") -> pd.DataFrame:
+    """Return telemetry DataFrame for a driver.
 
     Args:
-        session: FastF1 Session object
-        driver_code: Driver code (e.g., 'VER', 'HAM', 'LEC')
+        session: Loaded FastF1 session.
+        driver_code: Three-letter driver abbreviation.
+        laps: "fastest" (single fastest lap) or "all" (all completed laps).
 
     Returns:
-        Fastest Lap object or None if not available
+        DataFrame with Distance, Speed, Throttle, Brake, DRS, RPM, Gear, nGear.
+        If laps="all", also includes LapNumber column.
     """
-    try:
-        driver_laps = session.laps[session.laps["Driver"] == driver_code]
-        if driver_laps.empty:
-            return None
-        fastest_lap = driver_laps.pick_fastest()
-        return fastest_lap
-    except Exception as e:
-        print(f"Error getting fastest lap for {driver_code}: {e}")
-        return None
+    laps_data = session.laps.pick_drivers(driver_code)
+    if laps_data.empty:
+        raise DriverNotFound(f"Driver '{driver_code}' not found in session")
+
+    cols = ["Distance", "Speed", "Throttle", "Brake", "DRS", "RPM", "Gear", "nGear"]
+
+    if laps == "all":
+        telemetry_list = []
+        for _, lap in laps_data.iterrows():
+            lap_telemetry = lap.get_car_data()
+            keep = [c for c in cols if c in lap_telemetry.columns]
+            lap_telemetry = lap_telemetry[keep].copy()
+            lap_telemetry["LapNumber"] = lap["LapNumber"]
+            telemetry_list.append(lap_telemetry)
+        return pd.concat(telemetry_list, ignore_index=True)
+    else:
+        fastest = laps_data.pick_fastest()
+        telemetry = fastest.get_car_data()
+        return telemetry[[c for c in cols if c in telemetry.columns]]
 
 
-def get_lap_telemetry(lap: fastf1.core.Lap) -> pd.DataFrame:
+def get_sector_times(session: Session, driver_code: str) -> tuple:
+    """Return (s1, s2, s3) sector times in seconds for a driver's fastest lap."""
+    laps = session.laps.pick_drivers(driver_code)
+    if laps.empty:
+        raise DriverNotFound(f"Driver '{driver_code}' not found in session")
+    fastest = laps.pick_fastest()
+    return (
+        fastest["Sector1Time"].total_seconds(),
+        fastest["Sector2Time"].total_seconds(),
+        fastest["Sector3Time"].total_seconds(),
+    )
+
+
+def get_weather(session: Session) -> dict:
+    """Return average weather conditions for a session.
+
+    Returns dict with track_temp, air_temp (float °C) and rainfall (bool).
     """
-    Get telemetry data for a specific lap.
-
-    Args:
-        lap: FastF1 Lap object
-
-    Returns:
-        DataFrame with telemetry columns: Distance, Speed, Throttle, Brake, RPM, nGear, Time
-    """
-    try:
-        telemetry = lap.get_car_data()
-        if telemetry.empty:
-            return pd.DataFrame()
-        
-        telemetry = telemetry.reset_index(drop=True)
-        
-        if "Time" not in telemetry.columns and "date" in telemetry.columns:
-            telemetry["Time"] = (telemetry["date"] - telemetry["date"].iloc[0]).dt.total_seconds()
-        
-        return telemetry
-    except Exception as e:
-        print(f"Error getting telemetry: {e}")
-        return pd.DataFrame()
-
-
-def get_driver_info(session: fastf1.core.Session) -> pd.DataFrame:
-    """
-    Get driver information for the session.
-
-    Args:
-        session: FastF1 Session object
-
-    Returns:
-        DataFrame with driver information
-    """
-    try:
-        return session.results
-    except Exception as e:
-        print(f"Error getting driver info: {e}")
-        return pd.DataFrame()
-
-
-def get_session_info(session: fastf1.core.Session) -> Dict[str, Any]:
-    """
-    Get session information.
-
-    Args:
-        session: FastF1 Session object
-
-    Returns:
-        Dictionary with session info
-    """
+    weather = session.weather_data
+    if weather is None or weather.empty:
+        return {"track_temp": 0.0, "air_temp": 0.0, "rainfall": False}
     return {
-        "year": session.event.year,
-        "gp": session.event["Name"],
-        "session_type": session.session_name,
-        "date": session.event["OfficialEventName"]
+        "track_temp": float(weather["TrackTemp"].mean()),
+        "air_temp": float(weather["AirTemp"].mean()),
+        "rainfall": bool(weather["Rainfall"].any()),
     }
+
+
+def get_result(session: Session, driver_code: str) -> dict:
+    """Return result dict (position, status) for a driver."""
+    row = session.results[session.results["Abbreviation"] == driver_code]
+    if row.empty:
+        return {}
+    r = row.iloc[0]
+    return {"position": int(r["Position"]), "status": r["Status"]}

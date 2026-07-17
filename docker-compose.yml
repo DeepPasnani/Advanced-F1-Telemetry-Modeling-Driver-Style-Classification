@@ -1,24 +1,10 @@
-version: '3.8'
-
 services:
-  backend:
+  f1-api:
     build: .
     ports:
-      - "8000:8000"
-    environment:
-      - CACHE_TTL_MINUTES=30
-      - MAX_DRIVERS=6
-      - ALLOWED_ORIGIN=*
+      - "1212:8000"
     volumes:
       - ./cache:/app/cache
-    restart: unless-stopped
-
-  frontend:
-    image: nginx:alpine
-    ports:
-      - "3000:80"
-    volumes:
-      - ./frontend:/usr/share/nginx/html:ro
-    depends_on:
-      - backend
-    restart: unless-stopped
+      - ./output:/app/output
+    environment:
+      - FASTF1_CACHE_DIR=/app/cache
