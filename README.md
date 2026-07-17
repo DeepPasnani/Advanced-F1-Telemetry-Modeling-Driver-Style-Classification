@@ -8,7 +8,7 @@ Analyze F1 driver behavior using telemetry data. Classifies driving styles (Aggr
 
 ```bash
 # Terminal 1 — backend
-uvicorn server.main:app --host 0.0.0.0 --port 3000 --reload
+uvicorn server.main:app --host 0.0.0.0 --port 1212 --reload
 
 # Terminal 2 — frontend
 cd frontend && npm install && npx vite --host 0.0.0.0
@@ -20,7 +20,7 @@ cd frontend && npm install && npx vite --host 0.0.0.0
 
 ```bash
 docker compose up --build
-# Open http://localhost:3000
+# Open http://localhost:1212
 ```
 
 ### Tests
