@@ -4,7 +4,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Formula1', 'system-ui', 'sans-serif'],
+        wide: ['Formula1 Wide', 'Formula1', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
       },
       colors: {

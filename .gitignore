@@ -1,5 +1,15 @@
 venv/
 .venv/
 __pycache__/
+*.pyc
+.pytest_cache/
 frontend/node_modules
-.superpowers
+
+# FastF1 data cache — regenerated on demand from the F1 API
+cache/
+
+# Generated plot images — regenerated per analysis at runtime
+output/
+
+# Frontend production build — regenerate with `npm run build`
+frontend/dist/

@@ -1,6 +1,10 @@
 services:
   f1-api:
-    build: .
+    build:
+      context: .
+      args:
+        UID: "${UID:-1000}"
+        GID: "${GID:-1000}"
     ports:
       - "1212:8000"
     volumes:

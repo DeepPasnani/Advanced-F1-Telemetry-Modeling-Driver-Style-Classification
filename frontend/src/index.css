@@ -1,4 +1,26 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+@font-face {
+  font-family: 'Formula1';
+  src: url('/fonts/Formula1-Regular_web_0.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Formula1';
+  src: url('/fonts/Formula1-Bold_web_0.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Formula1 Wide';
+  src: url('/fonts/Formula1-Wide_web_0.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
 
 @tailwind base;
 @tailwind components;
@@ -6,9 +28,18 @@
 
 @layer base {
   body {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Formula1', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background:
+      radial-gradient(ellipse 1200px 600px at 50% -10%, rgba(232, 0, 45, 0.08), transparent 60%),
+      #050505;
+    background-attachment: fixed;
+  }
+
+  h1, h2, h3 {
+    font-family: 'Formula1 Wide', 'Formula1', system-ui, sans-serif;
+    letter-spacing: -0.01em;
   }
 
   ::selection {
@@ -115,6 +146,29 @@
   /* ── Pulse Skeleton ── */
   .f1-skeleton {
     @apply rounded bg-surface-raised animate-pulse;
+  }
+
+  /* ── Kicker (small label above a heading) ── */
+  .f1-kicker {
+    @apply inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-accent mb-2;
+  }
+  .f1-kicker::before {
+    content: '';
+    @apply h-1.5 w-1.5 shrink-0 rounded-full bg-accent shadow-[0_0_8px_rgba(232,0,45,0.6)];
+  }
+
+  /* ── Card with a colored top accent stripe ── */
+  .f1-card-accent {
+    @apply relative overflow-hidden;
+  }
+  .f1-card-accent::before {
+    content: '';
+    @apply absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-accent via-accent/50 to-transparent;
+  }
+
+  /* ── Chip (compact metadata pill) ── */
+  .f1-chip {
+    @apply inline-flex items-center gap-1 rounded-md bg-surface-raised px-2 py-1 text-xs font-medium text-ink-secondary;
   }
 }
 

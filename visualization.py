@@ -29,25 +29,27 @@ sns.set_theme(style="darkgrid")
 
 DRIVER_COLORS = {
     "VER": "#3671C6",
+    "PER": "#F2A900",
     "HAM": "#27F4D2",
+    "RUS": "#6CD3FF",
     "LEC": "#E8002D",
+    "SAI": "#FF6F91",
     "NOR": "#FF8000",
+    "PIA": "#FFB347",
     "ALO": "#229971",
-    "PER": "#3671C6",
-    "SAI": "#E8002D",
-    "RUS": "#27F4D2",
+    "STR": "#7FD9B4",
     "GAS": "#67C0F8",
-    "TSU": "#67C0F8",
-    "VET": "#209B96",
-    "STR": "#209B96",
-    "MAG": "#C92BE2",
-    "ZHO": "#F5C1C1",
-    "ALB": "#D7D7D7",
-    "PIA": "#D7D7D7",
+    "OCO": "#B769FF",
+    "TSU": "#4E7FFF",
+    "RIC": "#FFDD55",
     "BOT": "#A7F3FC",
     "ZHO": "#F5C1C1",
-    "RIC": "#229971",
-    "DEV": "#FF8000",
+    "MAG": "#C92BE2",
+    "HUL": "#8CFF6B",
+    "ALB": "#9AA5B1",
+    "SAR": "#D7D7D7",
+    "VET": "#209B96",
+    "DEV": "#FFA07A",
 }
 
 
@@ -56,13 +58,14 @@ def get_driver_color(driver_code: str) -> str:
     return DRIVER_COLORS.get(driver_code, "#888888")
 
 
-def plot_speed_traces(driver_telemetry_dict: Dict[str, pd.DataFrame], driver_colors: Dict[str, str] = None) -> None:
+def plot_speed_traces(driver_telemetry_dict: Dict[str, pd.DataFrame], driver_colors: Dict[str, str] = None, output_dir: str = OUTPUT_DIR) -> None:
     """
     Plot overlaid speed traces for all selected drivers.
 
     Args:
         driver_telemetry_dict: Dictionary mapping driver codes to telemetry DataFrames
         driver_colors: Optional dictionary mapping driver codes to colors
+        output_dir: Directory to save the plot into (namespaced per analysis)
     """
     if not driver_telemetry_dict:
         print("No telemetry data to plot")
@@ -86,18 +89,20 @@ def plot_speed_traces(driver_telemetry_dict: Dict[str, pd.DataFrame], driver_col
     ax.grid(True, alpha=0.3)
     
     plt.tight_layout()
-    output_path = os.path.join(OUTPUT_DIR, "speed_trace.png")
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, "speed_trace.png")
     plt.savefig(output_path, dpi=150, bbox_inches="tight")
     plt.close()
     print(f"Saved: {output_path}")
 
 
-def plot_throttle_brake(driver_telemetry_dict: Dict[str, pd.DataFrame]) -> None:
+def plot_throttle_brake(driver_telemetry_dict: Dict[str, pd.DataFrame], output_dir: str = OUTPUT_DIR) -> None:
     """
     Plot side-by-side throttle and brake traces for each driver.
 
     Args:
         driver_telemetry_dict: Dictionary mapping driver codes to telemetry DataFrames
+        output_dir: Directory to save the plot into (namespaced per analysis)
     """
     if not driver_telemetry_dict:
         print("No telemetry data to plot")
@@ -141,27 +146,31 @@ def plot_throttle_brake(driver_telemetry_dict: Dict[str, pd.DataFrame]) -> None:
     axes[-1, 1].set_xlabel("Distance (m)", fontsize=10)
     
     plt.tight_layout()
-    output_path = os.path.join(OUTPUT_DIR, "throttle_brake.png")
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, "throttle_brake.png")
     plt.savefig(output_path, dpi=150, bbox_inches="tight")
     plt.close()
     print(f"Saved: {output_path}")
 
 
-def plot_sector_comparison(sector_times_dict: Dict[str, tuple]) -> None:
+def plot_sector_comparison(sector_times_dict: Dict[str, tuple], output_dir: str = OUTPUT_DIR) -> None:
     """
     Plot bar chart comparing sector times across drivers.
 
     Args:
         sector_times_dict: Dictionary mapping driver codes to (s1, s2, s3) tuples
+        output_dir: Directory to save the plot into (namespaced per analysis)
     """
     if not sector_times_dict:
         print("No sector times to plot")
         return
     
     drivers = list(sector_times_dict.keys())
-    s1_times = [sector_times_dict[d][0] for d in drivers]
-    s2_times = [sector_times_dict[d][1] for d in drivers]
-    s3_times = [sector_times_dict[d][2] for d in drivers]
+    # A missing individual sector (rather than a missing lap entirely) comes
+    # through as None — plot it as a zero-height bar instead of crashing.
+    s1_times = [sector_times_dict[d][0] or 0 for d in drivers]
+    s2_times = [sector_times_dict[d][1] or 0 for d in drivers]
+    s3_times = [sector_times_dict[d][2] or 0 for d in drivers]
     
     x = np.arange(len(drivers))
     width = 0.25
@@ -193,27 +202,36 @@ def plot_sector_comparison(sector_times_dict: Dict[str, tuple]) -> None:
                            ha="center", va="bottom", fontsize=8)
     
     plt.tight_layout()
-    output_path = os.path.join(OUTPUT_DIR, "sector_comparison.png")
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, "sector_comparison.png")
     plt.savefig(output_path, dpi=150, bbox_inches="tight")
     plt.close()
     print(f"Saved: {output_path}")
 
 
-def plot_radar_chart(feature_df: pd.DataFrame, drivers: list) -> None:
+def plot_radar_chart(feature_df: pd.DataFrame, drivers: list, output_dir: str = OUTPUT_DIR) -> None:
     """
     Plot radar/spider chart showing normalized metrics per driver.
 
     Args:
         feature_df: DataFrame with driver features
         drivers: List of driver codes to plot
+        output_dir: Directory to save the plot into (namespaced per analysis)
     """
     if feature_df.empty or not drivers:
         print("No feature data to plot")
         return
     
-    categories = ["mean_speed", "mean_throttle", "brake_frequency", "aggression_index", "mean_gear"]
-    available_categories = [cat for cat in categories if cat in feature_df.columns]
-    
+    # extract_features(laps="all") suffixes every column with "_mean"/"_std"
+    # instead of using these bare names, so check for either form.
+    category_bases = ["mean_speed", "mean_throttle", "brake_frequency", "aggression_index", "mean_gear"]
+    available_categories = []
+    for base in category_bases:
+        if base in feature_df.columns:
+            available_categories.append(base)
+        elif f"{base}_mean" in feature_df.columns:
+            available_categories.append(f"{base}_mean")
+
     if not available_categories:
         print("No valid categories for radar chart")
         return
@@ -245,26 +263,28 @@ def plot_radar_chart(feature_df: pd.DataFrame, drivers: list) -> None:
         ax.fill(angles, values, alpha=0.25, color=color)
     
     ax.set_xticks(angles[:-1])
-    ax.set_xticklabels([cat.replace("_", " ").title() for cat in available_categories], fontsize=10)
+    ax.set_xticklabels([cat.replace("_mean", "").replace("_", " ").title() for cat in available_categories], fontsize=10)
     ax.set_ylim(0, 1)
     ax.set_title("Driver Style Profile - Radar Chart", fontsize=14, pad=30, fontweight="bold")
     ax.legend(loc="upper right", bbox_to_anchor=(1.3, 1.0), fontsize=10)
     ax.grid(True)
     
     plt.tight_layout()
-    output_path = os.path.join(OUTPUT_DIR, "radar_chart.png")
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, "radar_chart.png")
     plt.savefig(output_path, dpi=150, bbox_inches="tight")
     plt.close()
     print(f"Saved: {output_path}")
 
 
-def plot_cluster_scatter(feature_df: pd.DataFrame, style_labels: list) -> None:
+def plot_cluster_scatter(feature_df: pd.DataFrame, style_labels: list, output_dir: str = OUTPUT_DIR) -> None:
     """
     Plot 2D scatter using PCA on features, colored by cluster.
 
     Args:
         feature_df: DataFrame with driver features
         style_labels: List of style labels for each driver
+        output_dir: Directory to save the plot into (namespaced per analysis)
     """
     if feature_df.empty or not style_labels:
         print("No data for cluster scatter plot")
@@ -305,7 +325,8 @@ def plot_cluster_scatter(feature_df: pd.DataFrame, style_labels: list) -> None:
     ax.legend(handles=legend_elements, loc="best", fontsize=10)
     
     plt.tight_layout()
-    output_path = os.path.join(OUTPUT_DIR, "cluster_scatter.png")
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, "cluster_scatter.png")
     plt.savefig(output_path, dpi=150, bbox_inches="tight")
     plt.close()
     print(f"Saved: {output_path}")
@@ -315,7 +336,8 @@ def generate_all_visualizations(
     driver_telemetry_dict: Dict[str, pd.DataFrame],
     sector_times_dict: Dict[str, tuple],
     feature_df: pd.DataFrame,
-    style_labels: list
+    style_labels: list,
+    output_dir: str = OUTPUT_DIR,
 ) -> None:
     """
     Generate all visualization plots.
@@ -325,20 +347,23 @@ def generate_all_visualizations(
         sector_times_dict: Dictionary mapping driver codes to sector times
         feature_df: DataFrame with driver features
         style_labels: List of style labels
+        output_dir: Directory to save plots into — pass a per-analysis
+            directory (e.g. "output/<analysis_id>") so concurrent or
+            successive analyses don't overwrite each other's plots.
     """
     print("\n" + "="*50)
     print("Generating Visualizations...")
     print("="*50)
-    
+
     driver_colors = {driver: get_driver_color(driver) for driver in driver_telemetry_dict.keys()}
-    plot_speed_traces(driver_telemetry_dict, driver_colors)
-    plot_throttle_brake(driver_telemetry_dict)
-    plot_sector_comparison(sector_times_dict)
-    
+    plot_speed_traces(driver_telemetry_dict, driver_colors, output_dir=output_dir)
+    plot_throttle_brake(driver_telemetry_dict, output_dir=output_dir)
+    plot_sector_comparison(sector_times_dict, output_dir=output_dir)
+
     drivers = list(feature_df.index)
-    plot_radar_chart(feature_df, drivers)
-    plot_cluster_scatter(feature_df, style_labels)
-    
+    plot_radar_chart(feature_df, drivers, output_dir=output_dir)
+    plot_cluster_scatter(feature_df, style_labels, output_dir=output_dir)
+
     print("="*50)
-    print("All visualizations saved to output/")
+    print(f"All visualizations saved to {output_dir}/")
     print("="*50)

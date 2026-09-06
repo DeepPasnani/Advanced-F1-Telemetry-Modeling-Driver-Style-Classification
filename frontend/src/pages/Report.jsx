@@ -1,30 +1,37 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getReport } from '../hooks/useApi'
+import { getReport, getAnalysis } from '../hooks/useApi'
 import Breadcrumbs from '../components/Breadcrumbs'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorMessage from '../components/ErrorMessage'
 import PlotCard from '../components/PlotCard'
-
-const PLOTS = ['cluster_scatter', 'radar_chart', 'speed_trace', 'throttle_brake', 'sector_comparison']
+import { PLOTS, PLOT_INFO } from '../lib/plotInfo'
 
 export default function Report() {
   const { id } = useParams()
   const [report, setReport] = useState('')
+  const [session, setSession] = useState(null)
+  const [sessionId, setSessionId] = useState(null)
+  const [plotInsights, setPlotInsights] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [retryCount, setRetryCount] = useState(0)
 
-  const load = () => {
+  useEffect(() => {
     setLoading(true)
     setError('')
-    getReport(id)
-      .then((res) => setReport(res.data.report))
-      .catch((err) => setError(err.message))
+    const controller = new AbortController()
+    Promise.all([getReport(id, controller.signal), getAnalysis(id, controller.signal)])
+      .then(([reportRes, analysisRes]) => {
+        setReport(reportRes.data.report)
+        setSession(analysisRes.data.session)
+        setSessionId(analysisRes.data.session_id)
+        setPlotInsights(analysisRes.data.plot_insights || {})
+      })
+      .catch((err) => { if (err.name !== 'AbortError') setError(err.message) })
       .finally(() => setLoading(false))
-  }
-
-  useEffect(() => { load() }, [id, retryCount])
+    return () => controller.abort()
+  }, [id, retryCount])
 
   if (loading) return <div className="py-32"><LoadingSpinner label="Loading report..." /></div>
 
@@ -34,12 +41,16 @@ export default function Report() {
     <div className="animate-fade-in">
       <Breadcrumbs items={[
         { label: 'Sessions', to: '/' },
+        { label: session?.grand_prix || 'Session', to: sessionId ? `/session/${sessionId}` : undefined },
         { label: 'Analysis', to: `/analysis/${id}` },
         { label: 'Report' },
       ]} />
 
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
-        <h1 className="text-2xl font-bold text-ink">Driver Analysis Report</h1>
+        <div>
+          <span className="f1-kicker">{session?.label || 'Full Report'}</span>
+          <h1 className="text-2xl font-bold text-ink">Driver Analysis Report</h1>
+        </div>
         <Link to={`/analysis/${id}`} className="f1-btn-secondary">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -55,7 +66,8 @@ export default function Report() {
       <h2 className="text-xl font-bold text-ink mb-4">Visualizations</h2>
       <div className="grid gap-4 md:grid-cols-2">
         {PLOTS.map((name) => (
-          <PlotCard key={name} src={`/api/analysis/${id}/plots/${name}.png`} alt={`${name.replace(/_/g, ' ')} plot`} />
+          <PlotCard key={name} src={`/api/analysis/${id}/plots/${name}.png`} alt={`${name.replace(/_/g, ' ')} plot`}
+            title={PLOT_INFO[name].title} description={plotInsights[name] || PLOT_INFO[name].description} />
         ))}
       </div>
     </div>

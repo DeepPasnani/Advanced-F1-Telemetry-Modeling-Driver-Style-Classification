@@ -1,13 +1,21 @@
 services:
   - type: web
     name: f1-telemetry-api
-    env: python
-    buildCommand: pip install -r requirement.txt
-    startCommand: uvicorn server.main:app --host 0.0.0.0 --port $PORT
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /api/sessions
     envVars:
-      - key: CACHE_TTL_MINUTES
-        value: "30"
-      - key: MAX_DRIVERS
-        value: "6"
-      - key: ALLOWED_ORIGIN
-        value: "*"
+      # Render's free plan has no persistent disk, so cache/ and output/
+      # (and this app's own output/store.json persistence) reset on every
+      # restart/spin-down — the app handles that gracefully, it just means
+      # a cold start re-fetches from the F1 API instead of a local cache.
+      - key: FASTF1_CACHE_DIR
+        value: cache
+      # Set this to your actual Vercel URL once you have it (comma-separate
+      # multiple origins). Left for you to fill in at blueprint creation
+      # time — defaults to "*" in code if left blank, which works but is
+      # more permissive than necessary.
+      - key: ALLOWED_ORIGINS
+        sync: false

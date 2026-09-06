@@ -8,8 +8,11 @@ import LoadingSpinner from '../components/LoadingSpinner'
 function MiniTrace({ history, maxValue, color, fill }) {
   const w = 300; const h = 56
   if (!history.length) return <div className="h-[56px]" />
+  // Auto-scale past the nominal max so an outlier point never clips
+  // outside the trace instead of just being drawn near the top.
+  const effectiveMax = Math.max(maxValue, ...history, 1)
   const step = w / Math.max(history.length - 1, 1)
-  const pts = history.map((v, i) => `${i * step},${h - (v / maxValue) * h}`).join(' ')
+  const pts = history.map((v, i) => `${i * step},${h - (v / effectiveMax) * h}`).join(' ')
   const base = `${0},${h} ${pts} ${(history.length - 1) * step},${h}`
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-[56px] overflow-visible" preserveAspectRatio="none">
@@ -27,6 +30,13 @@ export default function LiveTelemetry() {
   const { data, connected, error: wsError } = useWebSocket(id, driverCode)
   const [speedHistory, setSpeedHistory] = useState([])
   const [throttleHistory, setThrottleHistory] = useState([])
+
+  useEffect(() => {
+    // Switching drivers reconnects the socket; without this the new
+    // driver's trace would start mixed in with the previous one's tail.
+    setSpeedHistory([])
+    setThrottleHistory([])
+  }, [driverCode])
 
   useEffect(() => {
     if (data) {
@@ -64,8 +74,9 @@ export default function LiveTelemetry() {
 
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
+          <span className="f1-kicker">Real-Time Replay</span>
           <h1 className="text-2xl font-bold text-ink">Live Telemetry</h1>
-          <p className="mt-1 text-sm text-ink-secondary">Real-time data replay &middot; {driverCode}</p>
+          <p className="mt-1 text-sm text-ink-secondary">Fastest-lap data, paced to real time &middot; {driverCode}</p>
         </div>
         <div className="flex items-center gap-3">
           <select value={driverCode} onChange={(e) => setDriverCode(e.target.value)}

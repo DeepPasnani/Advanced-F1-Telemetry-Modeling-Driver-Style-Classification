@@ -34,8 +34,10 @@ def generate_report(
                 lines.append(f"  DRS Usage: {feature_df.loc[driver, 'drs_usage']:.2%}")
 
         if driver in sector_times_dict:
+            def _fmt_sector(t):
+                return f"{t:.2f}s" if t is not None else "N/A"
             s1, s2, s3 = sector_times_dict[driver]
-            lines.append(f"  Sector Times: {s1:.2f}s / {s2:.2f}s / {s3:.2f}s")
+            lines.append(f"  Sector Times: {_fmt_sector(s1)} / {_fmt_sector(s2)} / {_fmt_sector(s3)}")
 
         if "lap_count" in feature_df.columns:
             lines.append(f"  Laps Analyzed: {int(feature_df.loc[driver, 'lap_count'])}")

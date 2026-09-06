@@ -1,30 +1,46 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { getDrivers, analyzeDrivers } from '../hooks/useApi'
+import { getDrivers, getSessionInfo, analyzeDrivers } from '../hooks/useApi'
 import Breadcrumbs from '../components/Breadcrumbs'
 import LoadingSkeleton from '../components/LoadingSkeleton'
 import ErrorMessage from '../components/ErrorMessage'
+
+const MIN_DRIVERS = 3
 
 export default function SessionDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [drivers, setDrivers] = useState([])
+  const [info, setInfo] = useState(null)
   const [selected, setSelected] = useState([])
   const [loading, setLoading] = useState(true)
+  const [slowLoad, setSlowLoad] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
     setLoading(true)
     setError('')
-    getDrivers(id)
-      .then((res) => {
-        setDrivers(res.data)
-        setSelected(res.data.slice(0, 3))
+    const controller = new AbortController()
+    Promise.all([getDrivers(id, controller.signal), getSessionInfo(id, controller.signal)])
+      .then(([driversRes, infoRes]) => {
+        setDrivers(driversRes.data)
+        setSelected(driversRes.data.slice(0, MIN_DRIVERS))
+        setInfo(infoRes.data)
       })
-      .catch((err) => setError(err.message))
+      .catch((err) => { if (err.name !== 'AbortError') setError(err.message) })
       .finally(() => setLoading(false))
+    return () => controller.abort()
   }, [id])
+
+  useEffect(() => {
+    if (!loading) { setSlowLoad(false); return }
+    // The session's data loads lazily on this first request — a first-ever
+    // (uncached) load of a session can take a while, so let the user know
+    // it isn't stuck rather than leaving a bare skeleton spinning.
+    const t = setTimeout(() => setSlowLoad(true), 2500)
+    return () => clearTimeout(t)
+  }, [loading])
 
   const toggle = (code) => {
     setSelected((prev) =>
@@ -32,8 +48,13 @@ export default function SessionDetail() {
     )
   }
 
+  const allSelected = drivers.length > 0 && selected.length === drivers.length
+  const toggleAll = () => setSelected(allSelected ? [] : drivers)
+
+  const canAnalyze = selected.length >= MIN_DRIVERS
+
   const handleAnalyze = async () => {
-    if (selected.length === 0) return
+    if (!canAnalyze) return
     setAnalyzing(true)
     setError('')
     try {
@@ -45,7 +66,16 @@ export default function SessionDetail() {
     }
   }
 
-  if (loading) return <LoadingSkeleton variant="driver-grid" />
+  if (loading) return (
+    <div>
+      <LoadingSkeleton variant="driver-grid" />
+      {slowLoad && (
+        <p className="mt-4 text-center text-sm text-ink-muted">
+          Fetching timing data from the F1 API — first-time loads of a session can take a little while.
+        </p>
+      )}
+    </div>
+  )
 
   if (error && drivers.length === 0) {
     return <ErrorMessage message={error} onRetry={() => window.location.reload()} backTo="/" backLabel="← Back to Sessions" />
@@ -53,14 +83,16 @@ export default function SessionDetail() {
 
   return (
     <div className="animate-fade-in">
-      <Breadcrumbs items={[{ label: 'Sessions', to: '/' }, { label: id.slice(0, 8) }]} />
+      <Breadcrumbs items={[{ label: 'Sessions', to: '/' }, { label: info ? info.grand_prix : '…' }]} />
 
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
+          {info && <span className="f1-kicker">{info.year} &middot; {info.grand_prix}</span>}
           <h1 className="text-2xl font-bold text-ink">Select Drivers</h1>
           <p className="mt-1 text-sm text-ink-secondary">
             <span className="font-semibold text-ink">{drivers.length}</span> drivers in session &middot;{' '}
             <span className="font-semibold text-accent">{selected.length}</span> selected
+            <span className="text-ink-muted"> (choose at least {MIN_DRIVERS})</span>
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -71,7 +103,10 @@ export default function SessionDetail() {
             </svg>
             Live
           </Link>
-          <button onClick={handleAnalyze} disabled={analyzing || selected.length === 0} className="f1-btn-primary">
+          <button type="button" onClick={toggleAll} className="f1-btn-secondary">
+            {allSelected ? 'Clear All' : 'Select All'}
+          </button>
+          <button onClick={handleAnalyze} disabled={analyzing || !canAnalyze} className="f1-btn-primary">
             {analyzing ? (
               <><div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> Analyzing...</>
             ) : 'Run Analysis'}
@@ -99,6 +134,9 @@ export default function SessionDetail() {
         })}
       </div>
 
+      {selected.length > 0 && selected.length < MIN_DRIVERS && (
+        <p className="mt-4 text-sm text-ink-muted">Select at least {MIN_DRIVERS} drivers to run analysis.</p>
+      )}
       {error && <p className="mt-4 text-sm text-red-400" role="alert">{error}</p>}
     </div>
   )

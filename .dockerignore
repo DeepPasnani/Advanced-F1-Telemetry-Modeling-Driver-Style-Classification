@@ -1,0 +1,28 @@
+# Version control
+.git/
+.gitignore
+
+# Python — the image installs its own deps from requirements.txt
+venv/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node — the frontend build stage runs its own `npm ci`; shipping the
+# host's node_modules risks clobbering the container's freshly-installed
+# copy with host-OS-specific native binaries (esbuild, rollup, etc.)
+frontend/node_modules/
+
+# Build/cache artifacts — the Dockerfile (re)builds/populates these; they
+# also change on every run, which would bust the Docker build cache
+frontend/dist/
+cache/
+output/
+
+# Planning docs — not read by any application code
+docs/
+.superpowers/
+
+# Editor/OS cruft
+.DS_Store

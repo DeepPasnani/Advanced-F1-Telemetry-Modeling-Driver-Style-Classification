@@ -1,8 +1,9 @@
-const BASE = '/api'
-
-/* Track all active abort controllers so we can cancel on unmount */
-const activeControllers = new Map()
-let ctrlId = 0
+// Same-origin by default (relative /api — works via the Vite dev proxy and
+// when a single backend also serves the built frontend, e.g. Docker).
+// Set VITE_API_BASE_URL at build time when the frontend is deployed
+// separately from the backend (e.g. frontend on Vercel, backend elsewhere).
+export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+const BASE = `${API_BASE_URL}/api`
 
 export function fetchApi(path, options = {}, signal) {
   const url = `${BASE}${path}`
@@ -20,47 +21,36 @@ export function fetchApi(path, options = {}, signal) {
   })
 }
 
-/* Hook-safe wrapper: tracks the controller for cleanup */
-export function useFetch() {
-  const controller = new AbortController()
-  const id = ++ctrlId
-  activeControllers.set(id, controller)
-
-  const cancel = () => {
-    controller.abort()
-    activeControllers.delete(id)
-  }
-
-  const run = (path, options = {}) => {
-    return fetchApi(path, options, controller.signal)
-  }
-
-  return { run, cancel, signal: controller.signal }
+export async function getSessions(signal) {
+  return fetchApi('/sessions', {}, signal)
 }
 
-/* Named API methods (for simple one-off calls without lifecycle tracking) */
-export async function getSessions() {
-  return fetchApi('/sessions')
-}
-
-export async function loadSession(year, grandPrix, sessionType = 'R') {
+export async function loadSession(year, grandPrix, sessionType = 'R', signal) {
   return fetchApi('/sessions/load', {
     method: 'POST',
     body: JSON.stringify({ year, grand_prix: grandPrix, session_type: sessionType }),
-  })
+  }, signal)
 }
 
-export async function getDrivers(sessionId) {
-  return fetchApi(`/sessions/${sessionId}/drivers`)
+export async function getSessionInfo(sessionId, signal) {
+  return fetchApi(`/sessions/${sessionId}`, {}, signal)
 }
 
-export async function analyzeDrivers(sessionId, driverCodes) {
+export async function getDrivers(sessionId, signal) {
+  return fetchApi(`/sessions/${sessionId}/drivers`, {}, signal)
+}
+
+export async function analyzeDrivers(sessionId, driverCodes, signal) {
   return fetchApi(`/sessions/${sessionId}/analyze`, {
     method: 'POST',
     body: JSON.stringify({ driver_codes: driverCodes }),
-  })
+  }, signal)
 }
 
-export async function getReport(analysisId) {
-  return fetchApi(`/analysis/${analysisId}/report`)
+export async function getAnalysis(analysisId, signal) {
+  return fetchApi(`/analysis/${analysisId}`, {}, signal)
+}
+
+export async function getReport(analysisId, signal) {
+  return fetchApi(`/analysis/${analysisId}/report`, {}, signal)
 }
