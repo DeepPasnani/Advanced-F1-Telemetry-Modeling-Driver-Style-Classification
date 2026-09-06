@@ -13,3 +13,7 @@ output/
 
 # Frontend production build — regenerate with `npm run build`
 frontend/dist/
+
+venv
+.superpowers
+__pycache__
