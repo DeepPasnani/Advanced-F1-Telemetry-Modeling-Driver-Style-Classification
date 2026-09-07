@@ -6,6 +6,8 @@ import os
 import json
 import logging
 import threading
+import gc
+from collections import OrderedDict
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -52,10 +54,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# session_id -> loaded FastF1 Session object (heavy, kept in memory only —
-# reloaded on demand from sessions_meta via FastF1's own on-disk cache, so
-# a server restart doesn't turn old session links into dead ends).
-sessions: dict = {}
+# session_id -> loaded FastF1 Session object. Each one measured at
+# ~250-350MB resident (a full field's car telemetry) — cheap hosts commonly
+# cap total memory around 512MB, so this is capped to an LRU of
+# MAX_CACHED_SESSIONS entries rather than growing unbounded for the life of
+# the process (which is what was actually causing this app to get
+# OOM-killed after a few different sessions were loaded). An evicted
+# session just gets lazily reloaded from sessions_meta on next use, via
+# FastF1's own on-disk cache — same mechanism that already covers a full
+# server restart.
+MAX_CACHED_SESSIONS = int(os.environ.get("MAX_CACHED_SESSIONS", "1"))
+sessions: "OrderedDict" = OrderedDict()
 
 # sessions_meta and analyses are plain JSON-serializable dicts persisted to
 # STORE_PATH (inside the already-mounted output/ volume) so a restart keeps
@@ -112,11 +121,13 @@ _session_load_lock = threading.Lock()
 def _get_session(session_id: str):
     session = sessions.get(session_id)
     if session is not None:
+        sessions.move_to_end(session_id)  # mark as most-recently-used
         return session
 
     with _session_load_lock:
         session = sessions.get(session_id)  # re-check: another thread may have just finished
         if session is not None:
+            sessions.move_to_end(session_id)
             return session
 
         meta = sessions_meta.get(session_id)
@@ -128,6 +139,12 @@ def _get_session(session_id: str):
         except Exception as e:
             raise HTTPException(status_code=502, detail=f"Failed to reload session: {e}")
         sessions[session_id] = session
+
+        while len(sessions) > MAX_CACHED_SESSIONS:
+            evicted_id, _ = sessions.popitem(last=False)  # oldest / least-recently-used
+            logger.info("Evicting cached session %s to stay under MAX_CACHED_SESSIONS", evicted_id)
+        gc.collect()
+
         return session
 
 
@@ -258,6 +275,11 @@ def _generate_plots_task(analysis_id, fastest_telemetry_dict, sector_dict, featu
         if analysis_id in analyses:
             analyses[analysis_id]["plots_ready"] = True
             _save_store()
+        # matplotlib figures + the (potentially large, for a full-grid
+        # analysis) telemetry dicts passed in are done with — encourage
+        # prompt reclaim on a memory-constrained host rather than waiting
+        # for the next gc cycle.
+        gc.collect()
 
 
 @app.post("/api/sessions/{session_id}/analyze")

@@ -91,7 +91,7 @@ def plot_speed_traces(driver_telemetry_dict: Dict[str, pd.DataFrame], driver_col
     plt.tight_layout()
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, "speed_trace.png")
-    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.savefig(output_path, dpi=100, bbox_inches="tight")
     plt.close()
     print(f"Saved: {output_path}")
 
@@ -109,7 +109,13 @@ def plot_throttle_brake(driver_telemetry_dict: Dict[str, pd.DataFrame], output_d
         return
     
     n_drivers = len(driver_telemetry_dict)
-    fig, axes = plt.subplots(n_drivers, 2, figsize=(14, 4 * n_drivers), sharex=True)
+    # Height scales with driver count (one row each) but is capped — with
+    # "select all" on a full ~20-driver grid, an uncapped 4in/driver figure
+    # rendered at savefig's dpi is a huge single pixel-buffer allocation
+    # (~100MB+ for 20 drivers), which is enough on its own to OOM a
+    # memory-constrained host. Rows just get more compact past the cap.
+    row_height = min(4, 48 / n_drivers)
+    fig, axes = plt.subplots(n_drivers, 2, figsize=(14, row_height * n_drivers), sharex=True)
     
     if n_drivers == 1:
         axes = axes.reshape(1, -1)
@@ -148,7 +154,7 @@ def plot_throttle_brake(driver_telemetry_dict: Dict[str, pd.DataFrame], output_d
     plt.tight_layout()
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, "throttle_brake.png")
-    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.savefig(output_path, dpi=100, bbox_inches="tight")
     plt.close()
     print(f"Saved: {output_path}")
 
@@ -204,7 +210,7 @@ def plot_sector_comparison(sector_times_dict: Dict[str, tuple], output_dir: str 
     plt.tight_layout()
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, "sector_comparison.png")
-    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.savefig(output_path, dpi=100, bbox_inches="tight")
     plt.close()
     print(f"Saved: {output_path}")
 
@@ -272,7 +278,7 @@ def plot_radar_chart(feature_df: pd.DataFrame, drivers: list, output_dir: str = 
     plt.tight_layout()
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, "radar_chart.png")
-    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.savefig(output_path, dpi=100, bbox_inches="tight")
     plt.close()
     print(f"Saved: {output_path}")
 
@@ -327,7 +333,7 @@ def plot_cluster_scatter(feature_df: pd.DataFrame, style_labels: list, output_di
     plt.tight_layout()
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, "cluster_scatter.png")
-    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.savefig(output_path, dpi=100, bbox_inches="tight")
     plt.close()
     print(f"Saved: {output_path}")
 

@@ -47,6 +47,14 @@ def load_session(year: int, grand_prix: str, session_type: str = "R") -> Session
     # Race control messages aren't used anywhere in this app — skip
     # fetching/parsing them to shave a bit off every load.
     session.load(messages=False)
+    # FastF1 loads car position (X/Y/Z track coordinates) as part of
+    # "telemetry", bundled with the car data (Speed/Throttle/Brake/etc.)
+    # this app actually uses — there's no way to skip fetching it, but we
+    # never read it, and measured it as ~110MB resident for a 20-driver
+    # field (more than the car data itself). Drop it immediately; on a
+    # memory-constrained host this is the difference between fitting in
+    # 512MB and getting OOM-killed.
+    session._pos_data = {}
     return session
 
 
